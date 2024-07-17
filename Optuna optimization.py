@@ -21,50 +21,11 @@ import optuna
 
 # COMMAND ----------
 
-import numpy as np
-import pandas as pd
-
-# Set the random seed for reproducibility
-np.random.seed(42)
-
-# Number of samples
-num_samples = 10000
-
-# Generate random data for 6 numerical predictors
-predictor_1 = np.random.randn(num_samples)
-predictor_2 = np.random.randn(num_samples)
-predictor_3 = np.random.randn(num_samples)
-predictor_4 = np.random.randn(num_samples)
-predictor_5 = np.random.randn(num_samples)
-predictor_6 = np.random.randn(num_samples)
-
-# Generate a random binary label (0 or 1)
-label = np.random.randint(0, 2, num_samples)
-
-# Create a DataFrame
-df = pd.DataFrame({
-    'predictor_1': predictor_1,
-    'predictor_2': predictor_2,
-    'predictor_3': predictor_3,
-    'predictor_4': predictor_4,
-    'predictor_5': predictor_5,
-    'predictor_6': predictor_6,
-    'label': label
-})
-
-# Display the first few rows of the DataFrame
-print(df.head())
-
-# COMMAND ----------
-
 from sklearn.model_selection import train_test_split
 
-print(f"We have {df.shape[0]} records in our source dataset")
+iris = sklearn.datasets.load_iris()
 
-# split target variable into it's own dataset
-target_col = "label"
-X_all = df.drop(labels=target_col, axis=1)
-y_all = df[target_col]
+X_all, y_all = iris.data, iris.target
 
 # test / train split
 X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, train_size=0.90, random_state=42)
@@ -87,6 +48,8 @@ def objective(trial):
 # 3. Create a study object and optimize the objective function.
 study = optuna.create_study(direction='maximize')
 study.optimize(objective, n_trials=10)
+
+print(study.best_trial)
 
 # COMMAND ----------
 
