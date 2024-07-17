@@ -34,20 +34,38 @@ print(f"We have {X_test.shape[0]} records in our test dataset")
 
 # COMMAND ----------
 
+import mlflow
+
+signature = mlflow.models.infer_signature(X_train, y_train)
+
 # 1. Define an objective function to be maximized.
 def objective(trial):
 
-    max_depth = trial.suggest_int('max_depth', 2, 32, log=True)
-    n_estimators = trial.suggest_int('n_estimators', 2, 32, log=True)
+    with mlflow.start_run(nested=True) as run:
 
-    rf = sklearn.ensemble.RandomForestClassifier(max_depth=max_depth, n_estimators=n_estimators)
-    
-    accuracy = sklearn.metrics.accuracy_score(y_test, rf.fit(X_train, y_train).predict(X_test))
+        max_depth = trial.suggest_int('max_depth', 2, 32, log=True)
+        n_estimators = trial.suggest_int('n_estimators', 2, 32, log=True)
+
+        mlflow.log_params({'max_depth': max_depth, 'n_estimators': n_estimators})
+
+        rf = sklearn.ensemble.RandomForestClassifier(max_depth=max_depth, n_estimators=n_estimators)
+        rf_model = rf.fit(X_train, y_train)
+        mlflow.sklearn.log_model(
+            rf_model,
+            "model",
+            signature=signature,
+            input_example=X_train[:3])
+        
+        accuracy = sklearn.metrics.accuracy_score(y_test, rf_model.predict(X_test))
+        mlflow.log_metric('accuracy', accuracy)
+
     return accuracy
 
-# 3. Create a study object and optimize the objective function.
-study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=10)
+mlflow.set_experiment("/Users/bence.toth@datapao.com/Optuna-tuning")
+
+with mlflow.start_run(run_name="Optuna") as outer_run:
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=10)
 
 print(study.best_trial)
 
